@@ -71,10 +71,6 @@ uri_parse({acct, ID}) ->
 
 -define(is_alphanum(C), C >= $A, C =< $Z; C >= $a, C =< $z; C >= $0, C =< $9).
 
-percent_encode(Term) when is_integer(Term) ->
-  integer_to_list(Term);
-percent_encode(Term) when is_atom(Term) ->
-  percent_encode(atom_to_list(Term));
 percent_encode(Term) when is_list(Term) ->
   percent_encode(lists:reverse(Term, []), []).
 
