@@ -1,0 +1,43 @@
+#!/usr/bin/env escript
+
+-include_lib("xmerl/include/xmerl.hrl").
+
+main(Args) ->
+  case Args of
+    [ID] -> lookup(ID, plaintext);
+    [ID, "--xml"] -> lookup(ID, xml);
+    [] -> io:format(standard_error, "usage: ./bin/lookup ACCT_URI [--xml]~n~n", []);
+    _ -> io:format(standard_error, "error: invalid usage~n~n", [])
+  end.
+
+lookup(ID, OutputFormat) ->
+  inets:start(),
+  code:add_path("ebin"),
+  case webfinger:lookup(ID) of
+    {ok, {xml, XRD}} ->
+      case OutputFormat of
+        xml ->
+          io:format("~s~n", [xmerl:export([XRD], xmerl_xml)]);
+        plaintext ->
+          [show(Element) || Element <- xmerl_xpath:string("//XRD/*", XRD)]
+      end;
+    Error ->
+      io:format(standard_error, "error: ~p~n", [Error])
+  end.
+
+show(#xmlElement{name='Link', attributes=Attrs}) ->
+  io:format("Link ~s ~s~n", [attr_value(rel, Attrs), attr_value(href, Attrs)]);
+show(#xmlElement{name=Name, content=[#xmlText{value=Value}]}) ->
+  io:format("~s ~s~n", [Name, Value]);
+show(_) ->
+  pass.
+
+attr_value(_, []) ->
+  undefined;
+attr_value(Name, [Attr|Attrs]) ->
+  case Attr of
+    #xmlAttribute{name=Name, value=Value} ->
+      Value;
+    _ ->
+      attr_value(Name, Attrs)
+  end.
