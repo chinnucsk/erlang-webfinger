@@ -41,7 +41,7 @@ template_search([#xmlElement{attributes=Attrs}|Links]) ->
   end.
 
 http_get(URL) ->
-  case http:request(get, {URL, []}, [{relaxed, true}], []) of
+  case httpc:request(get, {URL, []}, [{relaxed, true}], []) of
     Response={ok, {{_, 200, _}, Headers, Body}} ->
       Type = media_type(Headers),
       case lists:suffix("/xml", Type) orelse lists:suffix("+xml", Type) orelse lists:prefix("<?xml ", Body) of
