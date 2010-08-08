@@ -11,7 +11,7 @@ main(Args) ->
   end.
 
 lookup(ID, OutputFormat) ->
-  inets:start(),
+  inets:start(), ssl:start(),
   code:add_path("ebin"),
   case webfinger:lookup(ID) of
     {ok, {xml, XRD}} ->
