@@ -9,33 +9,26 @@ lookup(URI) ->
   {acct, _Userinfo, Host} = uri_parse(URI),
   case http_get(lists:concat(["http://", Host, "/.well-known/host-meta"])) of
     {ok, {xml, XRD}} ->
-      lookup(URI, Host, XRD);
+      lookup(URI, XRD);
     _ ->
       {error, bad_http}
   end.
 
-lookup(URI, Host, XRD) ->
-  case xmerl_xpath:string("//XRD/hm:Host/text()", XRD) of
-    [#xmlText{value=Host}] ->
-      case template_search(XRD) of
-        none ->
-          {error, no_link_template};
-        Template ->
-          http_get(re:replace(Template, "\\{uri\\}", percent_encode(URI), [{return, list}]))
-      end;
-    _ ->
-      {error, bad_host}
+lookup(URI, XRD) ->
+  case template_search(xmerl_xpath:string("//XRD/Link", XRD)) of
+    {template, Template} ->
+      http_get(re:replace(Template, "\\{uri\\}", percent_encode(URI), [{return, list}]));
+    none ->
+      {error, no_link_template}
   end.
 
-template_search(XRD=#xmlElement{}) ->
-  template_search(xmerl_xpath:string("//XRD/Link", XRD));
 template_search([]) ->
   none;
 template_search([#xmlElement{attributes=Attrs}|Links]) ->
   Props = [{K, V} || #xmlAttribute{name=K, value=V} <- Attrs],
   case proplists:get_value(rel, Props) =:= "lrdd" of
     true ->
-      proplists:get_value(template, Props);
+      proplists:lookup(template, Props);
     false ->
       template_search(Links)
   end.
